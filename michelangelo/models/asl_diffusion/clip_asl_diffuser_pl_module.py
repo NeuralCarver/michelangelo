@@ -33,7 +33,11 @@ def disabled_train(self, mode=True):
 
 
 class ClipASLDiffuser(pl.LightningModule,
-                      PyTorchModelHubMixin):
+                      PyTorchModelHubMixin,
+                      library_name="michelangelo",
+                      repo_url="https://github.com/NeuralCarver/Michelangelo",
+                      tags=["image-to-3d"]
+                      ):
     first_stage_model: Optional[AlignedShapeAsLatentPLModule]
     cond_stage_model: Optional[Union[nn.Module, pl.LightningModule]]
     model: nn.Module

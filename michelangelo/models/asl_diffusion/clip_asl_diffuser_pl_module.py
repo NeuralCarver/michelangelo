@@ -10,6 +10,7 @@ from torch.optim import lr_scheduler
 import pytorch_lightning as pl
 from pytorch_lightning.utilities import rank_zero_only
 from huggingface_hub import PyTorchModelHubMixin
+from omegaconf import OmegaConf
 
 from diffusers.schedulers import (
     DDPMScheduler,
@@ -52,6 +53,12 @@ class ClipASLDiffuser(pl.LightningModule,
                  ignore_keys: Union[Tuple[str], List[str]] = ()):
 
         super().__init__()
+        first_stage_config = OmegaConf.create(first_stage_config)
+        cond_stage_config = OmegaConf.create(cond_stage_config)
+        denoiser_cfg = OmegaConf.create(denoiser_cfg)
+        scheduler_cfg = OmegaConf.create(scheduler_cfg)
+        optimizer_cfg = OmegaConf.create(optimizer_cfg)
+        loss_cfg = OmegaConf.create(loss_cfg)
 
         self.first_stage_key = first_stage_key
         self.cond_stage_key = cond_stage_key

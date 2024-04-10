@@ -9,6 +9,8 @@ import torch.nn.functional as F
 from torch.optim import lr_scheduler
 import pytorch_lightning as pl
 from pytorch_lightning.utilities import rank_zero_only
+from huggingface_hub import PyTorchModelHubMixin
+from omegaconf import OmegaConf
 
 from diffusers.schedulers import (
     DDPMScheduler,
@@ -30,7 +32,12 @@ def disabled_train(self, mode=True):
     return self
 
 
-class ClipASLDiffuser(pl.LightningModule):
+class ClipASLDiffuser(pl.LightningModule,
+                      PyTorchModelHubMixin,
+                      library_name="michelangelo",
+                      repo_url="https://github.com/NeuralCarver/Michelangelo",
+                      tags=["image-to-3d"]
+                      ):
     first_stage_model: Optional[AlignedShapeAsLatentPLModule]
     cond_stage_model: Optional[Union[nn.Module, pl.LightningModule]]
     model: nn.Module
@@ -50,6 +57,12 @@ class ClipASLDiffuser(pl.LightningModule):
                  ignore_keys: Union[Tuple[str], List[str]] = ()):
 
         super().__init__()
+        first_stage_config = OmegaConf.create(first_stage_config)
+        cond_stage_config = OmegaConf.create(cond_stage_config)
+        denoiser_cfg = OmegaConf.create(denoiser_cfg)
+        scheduler_cfg = OmegaConf.create(scheduler_cfg)
+        optimizer_cfg = OmegaConf.create(optimizer_cfg)
+        loss_cfg = OmegaConf.create(loss_cfg)
 
         self.first_stage_key = first_stage_key
         self.cond_stage_key = cond_stage_key
@@ -82,9 +95,11 @@ class ClipASLDiffuser(pl.LightningModule):
         else:
             self.z_scale_factor = z_scale_factor
 
+        # moving init_from_ckpt outside the init method since
+        # we're switching to the PyTorchModelHubMixin class for initialization
         self.ckpt_path = ckpt_path
-        if ckpt_path is not None:
-            self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
+        # if ckpt_path is not None:
+        #     self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
 
     def instantiate_non_trainable_model(self, config):
         model = instantiate_from_config(config)
